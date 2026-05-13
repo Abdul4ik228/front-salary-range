@@ -1,11 +1,13 @@
+## Running the code
 
-  # Resume Income Estimator
+1. Install dependencies:
+   ```bash
+   npm i
+   ```
 
-  This is a code bundle for Resume Income Estimator. The original project is available at https://www.figma.com/design/fYilHtWjto0T1hatMNLc5d/Resume-Income-Estimator.
+2. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-  ## Running the code
-
-  Run `npm i` to install the dependencies.
-
-  Run `npm run dev` to start the development server.
-  
+> 💡 **Note for Windows users:** If you get an execution policy error in VS Code's PowerShell terminal, switch your terminal profile to **Command Prompt** or **Git Bash**.
