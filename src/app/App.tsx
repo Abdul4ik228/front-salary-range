@@ -3,6 +3,7 @@ import { FileUpload } from "./components/FileUpload";
 import { ResumeForm, type ResumeData } from "./components/ResumeForm";
 import { SalaryResult, type SalaryRange, type Recommendation } from "./components/SalaryResult";
 import { Briefcase } from "lucide-react";
+import { calculateSalary as callCalculateSalaryAPI } from "./lib/api";
 
 export default function App() {
   const [currentView, setCurrentView] = useState<"upload" | "form" | "result">("upload");
@@ -10,27 +11,39 @@ export default function App() {
   const [salaryRange, setSalaryRange] = useState<SalaryRange | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
-  const calculateSalary = (data: ResumeData): SalaryRange => {
-    const baseMin = 80000;
-    const baseMax = 250000;
+  const calculateSalary = async (data: ResumeData): Promise<{ salary: SalaryRange; recs: Recommendation[] }> => {
+    try {
+      // Преобразуем ResumeData в формат для API
+      const apiRequest = {
+        role: data.position,
+        experience_year: parseInt(data.experience),
+        skills: data.skills,
+        region: data.city,
+        education: data.education,
+      };
 
-    const experienceMultiplier = 1 + (parseInt(data.experience) * 0.15);
-    const skillsMultiplier = 1 + (data.skills.length * 0.05);
+      // Вызываем API
+      const apiResponse = await callCalculateSalaryAPI(apiRequest);
 
-    const cityMultipliers: Record<string, number> = {
-      "Москва": 1.4,
-      "Санкт-Петербург": 1.2,
-      "москва": 1.4,
-      "санкт-петербург": 1.2,
-    };
+      // Преобразуем ответ API в SalaryRange
+      const salary: SalaryRange = {
+        min: apiResponse.min_salary,
+        max: apiResponse.max_salary,
+        median: Math.round((apiResponse.min_salary + apiResponse.max_salary) / 2),
+      };
 
-    const cityMultiplier = cityMultipliers[data.city] || 1.0;
+      // Преобразуем рекомендации из API
+      const recs: Recommendation[] = apiResponse.recommendations.map((rec, index) => ({
+        title: rec.split(":")[0] || `Рекомендация ${index + 1}`,
+        description: rec,
+        impact: index === 0 ? "high" : index === 1 ? "medium" : "low",
+      }));
 
-    const min = Math.round(baseMin * experienceMultiplier * cityMultiplier);
-    const max = Math.round(baseMax * experienceMultiplier * skillsMultiplier * cityMultiplier);
-    const median = Math.round((min + max) / 2);
-
-    return { min, max, median };
+      return { salary, recs };
+    } catch (error) {
+      console.error("Ошибка при расчёте зарплаты:", error);
+      throw error;
+    }
   };
 
   const generateRecommendations = (data: ResumeData): Recommendation[] => {
@@ -85,14 +98,20 @@ export default function App() {
     setCurrentView("form");
   };
 
-  const handleSubmit = (data: ResumeData) => {
+  const handleSubmit = async (data: ResumeData) => {
     setResumeData(data);
-    const salary = calculateSalary(data);
-    const recs = generateRecommendations(data);
-
-    setSalaryRange(salary);
-    setRecommendations(recs);
-    setCurrentView("result");
+    try {
+      const { salary, recs } = await calculateSalary(data);
+      setSalaryRange(salary);
+      setRecommendations(recs);
+      setCurrentView("result");
+    } catch (error) {
+      alert(
+        `Ошибка при расчёте зарплаты: ${
+          error instanceof Error ? error.message : "Неизвестная ошибка"
+        }`
+      );
+    }
   };
 
   const handleRecalculate = () => {
@@ -105,14 +124,14 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-[#1d4ed8] text-white">
       <div className="container mx-auto px-4 py-8">
         <header className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Briefcase className="size-10 text-blue-600" />
-            <h1 className="text-4xl font-bold text-gray-900">Калькулятор зарплаты</h1>
+            <Briefcase className="size-10 text-white" />
+            <h1 className="text-4xl font-bold text-white">Калькулятор зарплаты</h1>
           </div>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-white max-w-2xl mx-auto">
             Узнайте свою рыночную стоимость и получите рекомендации по улучшению резюме
           </p>
         </header>

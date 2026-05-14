@@ -16,7 +16,7 @@ export interface ResumeData {
 }
 
 interface ResumeFormProps {
-  onSubmit: (data: ResumeData) => void;
+  onSubmit: (data: ResumeData) => void | Promise<void>;
   initialData?: ResumeData;
   onBack?: () => void;
 }
@@ -34,10 +34,16 @@ export function ResumeForm({ onSubmit, initialData, onBack }: ResumeFormProps) {
   );
 
   const [skillInput, setSkillInput] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const addSkill = () => {
@@ -179,8 +185,8 @@ export function ResumeForm({ onSubmit, initialData, onBack }: ResumeFormProps) {
             )}
           </div>
 
-          <Button type="submit" className="w-full" size="lg">
-            Рассчитать вилку дохода
+          <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+            {isSubmitting ? "Загрузка..." : "Рассчитать вилку дохода"}
           </Button>
         </form>
       </CardContent>
