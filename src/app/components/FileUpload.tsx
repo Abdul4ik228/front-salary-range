@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Upload, File, X, CheckCircle } from "lucide-react";
 import type { ResumeData } from "./ResumeForm";
+import { parseResume } from "../lib/api";
 
 interface FileUploadProps {
   onParsed: (data: ResumeData) => void;
@@ -27,36 +28,18 @@ export function FileUpload({ onParsed, onManualEntry }: FileUploadProps) {
   ];
 
   const mockParseResume = async (file: File): Promise<ResumeData> => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const mockData: ResumeData[] = [
-      {
-        name: "Алексей Петров",
-        position: "Frontend Developer",
-        experience: "4",
-        skills: ["React", "TypeScript", "JavaScript", "HTML/CSS", "Redux", "Next.js", "Git"],
-        education: "Высшее техническое, МГТУ им. Баумана",
-        city: "Москва",
-      },
-      {
-        name: "Мария Иванова",
-        position: "Full Stack Developer",
-        experience: "6",
-        skills: ["Node.js", "React", "PostgreSQL", "MongoDB", "Docker", "AWS", "TypeScript"],
-        education: "Высшее техническое, СПбГУ",
-        city: "Санкт-Петербург",
-      },
-      {
-        name: "Дмитрий Сидоров",
-        position: "Backend Developer",
-        experience: "3",
-        skills: ["Python", "Django", "FastAPI", "PostgreSQL", "Redis", "Docker"],
-        education: "Высшее техническое, НГУ",
-        city: "Новосибирск",
-      },
-    ];
-
-    return mockData[Math.floor(Math.random() * mockData.length)];
+    // Вызываем реальный API вместо мока
+    const apiResponse = await parseResume(file);
+    
+    // Преобразуем данные из API формата в ResumeData формат
+    return {
+      name: "Извлечено из резюме",  // API не возвращает имя
+      position: apiResponse.role,
+      experience: apiResponse.experience_year.toString(),
+      skills: apiResponse.skills,
+      education: apiResponse.education,
+      city: apiResponse.region,
+    };
   };
 
   const handleFileSelect = (selectedFile: File) => {
@@ -105,7 +88,12 @@ export function FileUpload({ onParsed, onManualEntry }: FileUploadProps) {
       const parsedData = await mockParseResume(file);
       onParsed(parsedData);
     } catch (error) {
-      alert("Ошибка при обработке файла. Попробуйте еще раз.");
+      console.error("Ошибка при обработке файла:", error);
+      alert(
+        `Ошибка при обработке файла: ${
+          error instanceof Error ? error.message : "Неизвестная ошибка"
+        }`
+      );
       setIsProcessing(false);
     }
   };
@@ -233,9 +221,9 @@ export function FileUpload({ onParsed, onManualEntry }: FileUploadProps) {
         </CardContent>
       </Card>
 
-      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-        <h4 className="font-medium mb-2 text-blue-900">Как это работает?</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
+      <div className="bg-blue-800 rounded-lg p-4 border border-blue-700">
+        <h4 className="font-medium mb-2 text-white">Как это работает?</h4>
+        <ul className="text-sm text-white/90 space-y-1">
           <li>• Загрузите свое резюме в любом поддерживаемом формате</li>
           <li>• Система автоматически извлечет ключевую информацию</li>
           <li>• Вы сможете проверить и отредактировать данные перед расчетом</li>
